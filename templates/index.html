@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather Dashboard - {{ weather.station if weather else 'N/A' }}</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌤️</text></svg>">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 2rem;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 2rem;
+            animation: fadeInDown 0.6s ease;
+        }
+
+        header h1 {
+            font-size: 3rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            margin-bottom: 0.5rem;
+        }
+
+        header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .weather-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .card {
+            background: white;
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            animation: fadeInUp 0.6s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+        }
+
+        .main-weather {
+            grid-column: span 2;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .main-weather::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: pulse 4s ease-in-out infinite;
+            pointer-events: none;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .weather-icon {
+            font-size: 6rem;
+            text-align: center;
+            margin: 1rem 0;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+
+        .temperature {
+            font-size: 4rem;
+            font-weight: bold;
+            text-align: center;
+            margin: 1rem 0;
+            position: relative;
+            z-index: 1;
+        }
+
+        .temp-toggle {
+            background: rgba(255,255,255,0.2);
+            border: 2px solid white;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            margin: 1rem auto;
+            display: block;
+            width: fit-content;
+        }
+
+        .temp-toggle:hover {
+            background: rgba(255,255,255,0.3);
+            transform: scale(1.05);
+        }
+
+        .weather-description {
+            text-align: center;
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .station-info {
+            text-align: center;
+            opacity: 0.9;
+            font-size: 0.95rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .details-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin-top: 1.5rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .detail-item {
+            background: rgba(255,255,255,0.1);
+            padding: 1rem;
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+        }
+
+        .detail-label {
+            font-size: 0.85rem;
+            opacity: 0.8;
+            margin-bottom: 0.3rem;
+        }
+
+        .detail-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .info-card h3 {
+            color: #667eea;
+            margin-bottom: 1rem;
+            font-size: 1.3rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .info-item:last-child {
+            border-bottom: none;
+        }
+
+        .info-label {
+            color: #666;
+            font-weight: 500;
+        }
+
+        .info-value {
+            font-weight: bold;
+            color: #333;
+        }
+
+        .wind-compass {
+            width: 150px;
+            height: 150px;
+            margin: 1rem auto;
+            position: relative;
+            border: 3px solid #667eea;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .wind-arrow {
+            width: 0;
+            height: 0;
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-bottom: 60px solid #fbbf24;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform-origin: bottom center;
+            transition: transform 0.5s ease;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+        }
+
+        .wind-dot {
+            width: 20px;
+            height: 20px;
+            background: #fbbf24;
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            display: none;
+        }
+
+        .wind-dot.active {
+            display: block;
+        }
+
+        .wind-arrow.hidden {
+            display: none;
+        }
+
+        .compass-label {
+            position: absolute;
+            font-size: 0.9rem;
+            font-weight: bold;
+            color: white;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+        }
+
+        .compass-label.n { top: 5px; left: 50%; transform: translateX(-50%); }
+        .compass-label.e { right: 5px; top: 50%; transform: translateY(-50%); }
+        .compass-label.s { bottom: 5px; left: 50%; transform: translateX(-50%); }
+        .compass-label.w { left: 5px; top: 50%; transform: translateY(-50%); }
+
+        .chart-card {
+            grid-column: 1 / -1;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 400px;
+            margin-top: 1rem;
+        }
+
+        .flight-category {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 0.85rem;
+            margin-top: 1rem;
+        }
+
+        .flight-category.VFR {
+            background: #4ade80;
+            color: white;
+        }
+
+        .flight-category.MVFR {
+            background: #60a5fa;
+            color: white;
+        }
+
+        .flight-category.IFR {
+            background: #f87171;
+            color: white;
+        }
+
+        .flight-category.LIFR {
+            background: #c084fc;
+            color: white;
+        }
+
+        .raw-metar {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+            color: #495057;
+            margin-top: 1rem;
+            overflow-x: auto;
+            border-left: 4px solid #667eea;
+        }
+
+        .cloud-layers {
+            margin-top: 1rem;
+        }
+
+        .cloud-item {
+            background: rgba(255,255,255,0.1);
+            padding: 0.5rem;
+            border-radius: 5px;
+            margin: 0.5rem 0;
+            font-size: 0.9rem;
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: white;
+            font-size: 1.5rem;
+        }
+
+        @media (max-width: 768px) {
+            .main-weather {
+                grid-column: span 1;
+            }
+
+            header h1 {
+                font-size: 2rem;
+            }
+
+            .temperature {
+                font-size: 3rem;
+            }
+
+            .weather-icon {
+                font-size: 4rem;
+            }
+        }
+
+        .update-time {
+            text-align: center;
+            color: white;
+            opacity: 0.8;
+            margin-top: 2rem;
+            font-size: 0.9rem;
+        }
+
+        .airport-selector {
+            background: white;
+            border-radius: 20px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            animation: fadeInDown 0.6s ease;
+        }
+
+        .airport-selector h2 {
+            color: #667eea;
+            margin-bottom: 1.5rem;
+            font-size: 1.5rem;
+        }
+
+        .search-container {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .search-input {
+            flex: 1;
+            min-width: 200px;
+            padding: 0.75rem 1.25rem;
+            font-size: 1rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 30px;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .search-input:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .search-button {
+            padding: 0.75rem 2rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 30px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .search-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .popular-airports {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .airport-chip {
+            padding: 0.5rem 1rem;
+            background: #f0f0f0;
+            border: 2px solid transparent;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .airport-chip:hover {
+            background: #667eea;
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .airport-chip.active {
+            background: #667eea;
+            color: white;
+            border-color: #764ba2;
+        }
+
+        .quick-label {
+            color: #666;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+            display: block;
+        }
+
+        .auto-refresh-toggle {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-top: 1rem;
+            padding: 0.75rem;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 50px;
+            height: 26px;
+            background: #ccc;
+            border-radius: 13px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .toggle-switch.active {
+            background: #667eea;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            width: 22px;
+            height: 22px;
+            background: white;
+            border-radius: 50%;
+            top: 2px;
+            left: 2px;
+            transition: transform 0.3s;
+        }
+
+        .toggle-switch.active .toggle-slider {
+            transform: translateX(24px);
+        }
+
+        .refresh-label {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .refresh-label.active {
+            color: #667eea;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🌤️ Advanced Weather Dashboard</h1>
+            <p>Real-time METAR Aviation Weather Data</p>
+        </header>
+
+        <!-- Airport Selector -->
+        <div class="airport-selector">
+            <h2>✈️ Select Airport</h2>
+            <div class="search-container">
+                <input type="text"
+                       id="stationInput"
+                       class="search-input"
+                       placeholder="Enter ICAO code (e.g., KJFK, EGLL, YSSY)"
+                       value="{{ current_station }}"
+                       maxlength="4">
+                <button class="search-button" onclick="searchStation()">Get Weather</button>
+            </div>
+            <span class="quick-label">Quick Select:</span>
+            <div class="popular-airports">
+                {% for airport in popular_airports %}
+                <div class="airport-chip {% if airport.code == current_station %}active{% endif %}"
+                     onclick="selectAirport('{{ airport.code }}')">
+                    {{ airport.code }} - {{ airport.name }}
+                </div>
+                {% endfor %}
+            </div>
+            <div class="auto-refresh-toggle">
+                <div class="toggle-switch" id="refreshToggle" onclick="toggleAutoRefresh()">
+                    <div class="toggle-slider"></div>
+                </div>
+                <span class="refresh-label" id="refreshLabel">Auto-refresh every 5 minutes</span>
+            </div>
+        </div>
+
+        {% if weather %}
+        <div class="weather-grid">
+            <!-- Main Weather Card -->
+            <div class="card main-weather">
+                <div class="weather-icon">{{ weather.icon }}</div>
+                <div class="temperature" id="temperature">
+                    <span class="temp-value">{{ weather.temperature_c }}</span><span class="temp-unit">°C</span>
+                </div>
+                <button class="temp-toggle" onclick="toggleTemperature()">Switch to °F</button>
+                <div class="weather-description">{{ weather.description }}</div>
+                <div class="station-info">
+                    <strong>{{ weather.station }}</strong><br>
+                    {{ weather.station_name }}<br>
+                    {% if weather.flight_category %}
+                        <span class="flight-category {{ weather.flight_category }}">{{ weather.flight_category }}</span>
+                    {% endif %}
+                </div>
+
+                <div class="details-grid">
+                    {% if weather.humidity %}
+                    <div class="detail-item">
+                        <div class="detail-label">💧 Humidity</div>
+                        <div class="detail-value">{{ weather.humidity }}%</div>
+                    </div>
+                    {% endif %}
+
+                    {% if weather.visibility %}
+                    <div class="detail-item">
+                        <div class="detail-label">👁️ Visibility</div>
+                        <div class="detail-value">{{ weather.visibility }} mi</div>
+                    </div>
+                    {% endif %}
+
+                    {% if weather.pressure %}
+                    <div class="detail-item">
+                        <div class="detail-label">🌡️ Pressure</div>
+                        <div class="detail-value">{{ weather.pressure }} mb</div>
+                    </div>
+                    {% endif %}
+
+                    {% if weather.dewpoint_c %}
+                    <div class="detail-item">
+                        <div class="detail-label">💦 Dewpoint</div>
+                        <div class="detail-value" id="dewpoint">
+                            <span class="dewp-value">{{ weather.dewpoint_c }}</span><span class="dewp-unit">°C</span>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Wind Information -->
+            <div class="card info-card">
+                <h3>💨 Wind Information</h3>
+                {% if weather.wind_direction or weather.wind_direction == 0 %}
+                <div class="wind-compass">
+                    <span class="compass-label n">N</span>
+                    <span class="compass-label e">E</span>
+                    <span class="compass-label s">S</span>
+                    <span class="compass-label w">W</span>
+                    <div class="wind-arrow" id="windArrow"></div>
+                    <div class="wind-dot" id="windDot"></div>
+                </div>
+                {% endif %}
+
+                {% if weather.wind_speed %}
+                <div class="info-item">
+                    <span class="info-label">Wind Speed</span>
+                    <span class="info-value">{{ weather.wind_speed }} knots</span>
+                </div>
+                {% endif %}
+
+                {% if weather.wind_gust %}
+                <div class="info-item">
+                    <span class="info-label">Gusts</span>
+                    <span class="info-value">{{ weather.wind_gust }} knots</span>
+                </div>
+                {% endif %}
+
+                {% if weather.wind_direction is not none %}
+                <div class="info-item">
+                    <span class="info-label">Direction</span>
+                    <span class="info-value">
+                        {% if weather.wind_direction == 'VRB' or weather.wind_direction is none %}
+                            Variable
+                        {% else %}
+                            {{ weather.wind_direction }}°
+                        {% endif %}
+                    </span>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Cloud Information -->
+            {% if weather.clouds %}
+            <div class="card info-card">
+                <h3>☁️ Cloud Layers</h3>
+                <div class="cloud-layers">
+                    {% for cloud in weather.clouds %}
+                    <div class="cloud-item">
+                        <strong>{{ cloud.cover }}</strong> at {{ cloud.base }} ft
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- METAR Report -->
+            <div class="card info-card">
+                <h3>📡 Raw METAR</h3>
+                <div class="raw-metar">{{ weather.raw_report }}</div>
+                <div class="station-info" style="margin-top: 1rem; color: #666;">
+                    <small>Observed: {{ weather.time }}</small>
+                </div>
+            </div>
+
+            <!-- Temperature Chart -->
+            <div class="card chart-card">
+                <h3 style="color: #667eea; margin-bottom: 0.5rem;">📊 7-Day Temperature Forecast</h3>
+                <p style="color: #999; font-size: 0.85rem; margin-bottom: 1rem;">
+                    Data source: {{ forecast_source if forecast_source else 'Sample Data' }}
+                </p>
+                <div class="chart-container">
+                    <canvas id="tempChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="update-time">
+            Last updated: <span id="currentTime"></span>
+        </div>
+        {% else %}
+        <div class="loading">
+            <p>⚠️ Unable to load weather data</p>
+            <p style="font-size: 1rem; margin-top: 1rem;">Please check your connection and try again</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <script>
+        // Temperature data for conversion
+        {% if weather %}
+        const tempC = {{ weather.temperature_c if weather.temperature_c is not none else 'null' }};
+        const tempF = {{ weather.temperature_f if weather.temperature_f is not none else 'null' }};
+        const dewpC = {{ weather.dewpoint_c if weather.dewpoint_c is not none else 'null' }};
+        const dewpF = {{ weather.dewpoint_f if weather.dewpoint_f is not none else 'null' }};
+        {% else %}
+        const tempC = null;
+        const tempF = null;
+        const dewpC = null;
+        const dewpF = null;
+        {% endif %}
+        let isCelsius = true;
+
+        function toggleTemperature() {
+            console.log('Toggle button clicked!');
+            console.log('tempC:', tempC, 'tempF:', tempF);
+
+            if (tempC === null || tempF === null) {
+                console.log('Temperature values are null, exiting');
+                return;
+            }
+
+            isCelsius = !isCelsius;
+            console.log('isCelsius:', isCelsius);
+
+            const tempElement = document.querySelector('.temp-value');
+            const unitElement = document.querySelector('.temp-unit');
+            const dewpElement = document.querySelector('.dewp-value');
+            const dewpUnitElement = document.querySelector('.dewp-unit');
+            const button = document.querySelector('.temp-toggle');
+
+            console.log('Found elements:', {
+                tempElement: !!tempElement,
+                unitElement: !!unitElement,
+                dewpElement: !!dewpElement,
+                button: !!button
+            });
+
+            if (!tempElement || !unitElement) {
+                console.error('Required elements not found!');
+                return;
+            }
+
+            if (isCelsius) {
+                tempElement.textContent = tempC.toFixed(1);
+                unitElement.textContent = '°C';
+                if (dewpElement && dewpC !== null) {
+                    dewpElement.textContent = dewpC.toFixed(1);
+                    dewpUnitElement.textContent = '°C';
+                }
+                button.textContent = 'Switch to °F';
+                console.log('Switched to Celsius');
+            } else {
+                tempElement.textContent = tempF.toFixed(1);
+                unitElement.textContent = '°F';
+                if (dewpElement && dewpF !== null) {
+                    dewpElement.textContent = dewpF.toFixed(1);
+                    dewpUnitElement.textContent = '°F';
+                }
+                button.textContent = 'Switch to °C';
+                console.log('Switched to Fahrenheit');
+            }
+        }
+
+        // Set wind arrow direction or show dot for variable wind
+        {% if weather.wind_direction or weather.wind_direction == 0 %}
+        const windDirection = {{ weather.wind_direction if weather.wind_direction is not none else 'null' }};
+        const windArrow = document.getElementById('windArrow');
+        const windDot = document.getElementById('windDot');
+
+        if (windArrow && windDot) {
+            // Check if wind is variable (null, undefined, or VRB string)
+            if (windDirection === null || windDirection === undefined || '{{ weather.wind_direction }}'.toUpperCase() === 'VRB') {
+                // Show dot for variable wind
+                windArrow.classList.add('hidden');
+                windDot.classList.add('active');
+            } else {
+                // Show arrow for directional wind
+                windArrow.classList.remove('hidden');
+                windDot.classList.remove('active');
+                windArrow.style.transform = `translate(-50%, -100%) rotate(${windDirection}deg)`;
+            }
+        }
+        {% endif %}
+
+        // Update current time
+        function updateTime() {
+            const now = new Date();
+            document.getElementById('currentTime').textContent = now.toLocaleString();
+        }
+        updateTime();
+        setInterval(updateTime, 1000);
+
+        // Create enhanced temperature chart
+        const ctx = document.getElementById('tempChart');
+        if (ctx) {
+            const days = {{ days | tojson }};
+            const avgTemps = {{ avg_temps | tojson }};
+            const minTemps = {{ min_temps | tojson }};
+            const maxTemps = {{ max_temps | tojson }};
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: days,
+                    datasets: [
+                        {
+                            label: 'Maximum Temperature (°F)',
+                            data: maxTemps,
+                            borderColor: 'rgb(239, 68, 68)',
+                            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        },
+                        {
+                            label: 'Average Temperature (°F)',
+                            data: avgTemps,
+                            borderColor: 'rgb(102, 126, 234)',
+                            backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        },
+                        {
+                            label: 'Minimum Temperature (°F)',
+                            data: minTemps,
+                            borderColor: 'rgb(59, 130, 246)',
+                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            labels: {
+                                usePointStyle: true,
+                                padding: 15,
+                                font: {
+                                    size: 12
+                                }
+                            }
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            padding: 12,
+                            cornerRadius: 8
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            },
+                            ticks: {
+                                callback: function(value) {
+                                    return value + '°F';
+                                }
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        }
+                    },
+                    interaction: {
+                        mode: 'nearest',
+                        axis: 'x',
+                        intersect: false
+                    }
+                }
+            });
+        }
+
+        // Add animation delays to cards
+        document.addEventListener('DOMContentLoaded', function() {
+            const cards = document.querySelectorAll('.card');
+            cards.forEach((card, index) => {
+                card.style.animationDelay = `${index * 0.1}s`;
+            });
+
+            // Allow Enter key to search
+            const input = document.getElementById('stationInput');
+            if (input) {
+                input.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        searchStation();
+                    }
+                });
+
+                // Convert input to uppercase as user types
+                input.addEventListener('input', function(e) {
+                    e.target.value = e.target.value.toUpperCase();
+                });
+            }
+        });
+
+        // Search for weather at entered station
+        function searchStation() {
+            const stationCode = document.getElementById('stationInput').value.trim().toUpperCase();
+            if (stationCode && stationCode.length >= 3) {
+                window.location.href = `/?station=${stationCode}`;
+            } else {
+                alert('Please enter a valid ICAO airport code (3-4 characters)');
+            }
+        }
+
+        // Quick select from popular airports
+        function selectAirport(code) {
+            document.getElementById('stationInput').value = code;
+            window.location.href = `/?station=${code}`;
+        }
+
+        // Auto-refresh functionality
+        let autoRefreshInterval = null;
+        let isAutoRefreshEnabled = localStorage.getItem('autoRefresh') === 'true';
+
+        function toggleAutoRefresh() {
+            isAutoRefreshEnabled = !isAutoRefreshEnabled;
+            localStorage.setItem('autoRefresh', isAutoRefreshEnabled);
+
+            const toggle = document.getElementById('refreshToggle');
+            const label = document.getElementById('refreshLabel');
+
+            if (isAutoRefreshEnabled) {
+                toggle.classList.add('active');
+                label.classList.add('active');
+                label.textContent = 'Auto-refresh: ON (every 5 min)';
+                startAutoRefresh();
+            } else {
+                toggle.classList.remove('active');
+                label.classList.remove('active');
+                label.textContent = 'Auto-refresh every 5 minutes';
+                stopAutoRefresh();
+            }
+        }
+
+        function startAutoRefresh() {
+            if (autoRefreshInterval) return;
+            autoRefreshInterval = setInterval(() => {
+                console.log('Auto-refreshing weather data...');
+                location.reload();
+            }, 5 * 60 * 1000); // 5 minutes
+        }
+
+        function stopAutoRefresh() {
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+                autoRefreshInterval = null;
+            }
+        }
+
+        // Initialize auto-refresh state on page load
+        if (isAutoRefreshEnabled) {
+            const toggle = document.getElementById('refreshToggle');
+            const label = document.getElementById('refreshLabel');
+            if (toggle && label) {
+                toggle.classList.add('active');
+                label.classList.add('active');
+                label.textContent = 'Auto-refresh: ON (every 5 min)';
+                startAutoRefresh();
+            }
+        }
+    </script>
+</body>
+</html>
