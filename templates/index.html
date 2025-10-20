@@ -15,10 +15,59 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
             min-height: 100vh;
             padding: 2rem;
             color: #333;
+            transition: background 1s ease;
+        }
+
+        /* Dynamic weather backgrounds */
+        body.clear-sky {
+            background: linear-gradient(135deg, #87CEEB 0%, #98D8E8 50%, #FDB813 100%);
+        }
+
+        body.few-clouds {
+            background: linear-gradient(135deg, #87CEEB 0%, #B0E0E6 40%, #E0F6FF 100%);
+        }
+
+        body.scattered-clouds {
+            background: linear-gradient(135deg, #4682B4 0%, #87CEEB 50%, #B0C4DE 100%);
+        }
+
+        body.broken-clouds {
+            background: linear-gradient(135deg, #708090 0%, #778899 50%, #A9A9A9 100%);
+        }
+
+        body.overcast {
+            background: linear-gradient(135deg, #4A5568 0%, #2D3748 50%, #1A202C 100%);
+        }
+
+        body.thunderstorm {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 30%, #0f3460 70%, #533483 100%);
+            animation: thunder-bg 4s ease-in-out infinite;
+        }
+
+        body.rainy {
+            background: linear-gradient(135deg, #4a5568 0%, #2d3748 40%, #1a202c 100%);
+        }
+
+        body.snowy {
+            background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e0 40%, #a0aec0 100%);
+        }
+
+        body.default-weather {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        @keyframes thunder-bg {
+            0%, 90%, 100% {
+                background: linear-gradient(135deg, #1a1a2e 0%, #16213e 30%, #0f3460 70%, #533483 100%);
+            }
+            95% {
+                background: linear-gradient(135deg, #ffd700 0%, #ffed4e 10%, #1a1a2e 100%);
+                filter: brightness(1.3);
+            }
         }
 
         .container {
@@ -67,7 +116,7 @@
 
         .main-weather {
             grid-column: span 2;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
             color: white;
             position: relative;
             overflow: hidden;
@@ -174,7 +223,7 @@
         }
 
         .info-card h3 {
-            color: #667eea;
+            color: #1e3c72;
             margin-bottom: 1rem;
             font-size: 1.3rem;
             display: flex;
@@ -208,12 +257,12 @@
             height: 150px;
             margin: 1rem auto;
             position: relative;
-            border: 3px solid #667eea;
+            border: 3px solid #1e3c72;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
         }
 
         .wind-arrow {
@@ -312,7 +361,7 @@
             color: #495057;
             margin-top: 1rem;
             overflow-x: auto;
-            border-left: 4px solid #667eea;
+            border-left: 4px solid #1e3c72;
         }
 
         .cloud-layers {
@@ -392,7 +441,7 @@
         }
 
         .airport-selector h2 {
-            color: #667eea;
+            color: #1e3c72;
             margin-bottom: 1.5rem;
             font-size: 1.5rem;
         }
@@ -416,13 +465,13 @@
         }
 
         .search-input:focus {
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            border-color: #1e3c72;
+            box-shadow: 0 0 0 3px rgba(30, 60, 114, 0.1);
         }
 
         .search-button {
             padding: 0.75rem 2rem;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
             color: white;
             border: none;
             border-radius: 30px;
@@ -434,7 +483,7 @@
 
         .search-button:hover {
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+            box-shadow: 0 5px 15px rgba(30, 60, 114, 0.4);
         }
 
         .popular-airports {
@@ -454,15 +503,15 @@
         }
 
         .airport-chip:hover {
-            background: #667eea;
+            background: #1e3c72;
             color: white;
             transform: translateY(-2px);
         }
 
         .airport-chip.active {
-            background: #667eea;
+            background: #1e3c72;
             color: white;
-            border-color: #764ba2;
+            border-color: #2a5298;
         }
 
         .quick-label {
@@ -493,7 +542,7 @@
         }
 
         .toggle-switch.active {
-            background: #667eea;
+            background: #1e3c72;
         }
 
         .toggle-slider {
@@ -517,12 +566,12 @@
         }
 
         .refresh-label.active {
-            color: #667eea;
+            color: #1e3c72;
             font-weight: 600;
         }
     </style>
 </head>
-<body>
+<body class="{{ weather.background_class if weather else 'default-weather' }}">
     <div class="container">
         <header>
             <h1>🌤️ Advanced Weather Dashboard</h1>
@@ -612,71 +661,77 @@
             <!-- Wind Information -->
             <div class="card info-card">
                 <h3>💨 Wind Information</h3>
-                {% if weather.wind_direction or weather.wind_direction == 0 %}
-                <div class="wind-compass">
-                    <span class="compass-label n">N</span>
-                    <span class="compass-label e">E</span>
-                    <span class="compass-label s">S</span>
-                    <span class="compass-label w">W</span>
-                    <div class="wind-arrow" id="windArrow"></div>
-                    <div class="wind-dot" id="windDot"></div>
-                </div>
-                {% endif %}
-
-                {% if weather.wind_speed %}
-                <div class="info-item">
-                    <span class="info-label">Wind Speed</span>
-                    <span class="info-value">{{ weather.wind_speed }} knots</span>
-                </div>
-                {% endif %}
-
-                {% if weather.wind_gust %}
-                <div class="info-item">
-                    <span class="info-label">Gusts</span>
-                    <span class="info-value">{{ weather.wind_gust }} knots</span>
-                </div>
-                {% endif %}
-
-                {% if weather.wind_direction is not none %}
-                <div class="info-item">
-                    <span class="info-label">Direction</span>
-                    <span class="info-value">
-                        {% if weather.wind_direction == 'VRB' or weather.wind_direction is none %}
-                            Variable
-                        {% else %}
-                            {{ weather.wind_direction }}°
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div>
+                        {% if weather.wind_direction or weather.wind_direction == 0 %}
+                        <div class="wind-compass" style="width: 100px; height: 100px; margin: 0 auto;">
+                            <span class="compass-label n">N</span>
+                            <span class="compass-label e">E</span>
+                            <span class="compass-label s">S</span>
+                            <span class="compass-label w">W</span>
+                            <div class="wind-arrow" id="windArrow"></div>
+                            <div class="wind-dot" id="windDot"></div>
+                        </div>
                         {% endif %}
-                    </span>
+                    </div>
+                    <div>
+                        {% if weather.wind_speed %}
+                        <div class="info-item">
+                            <span class="info-label">Wind Speed</span>
+                            <span class="info-value">{{ weather.wind_speed }} knots</span>
+                        </div>
+                        {% endif %}
+
+                        {% if weather.wind_gust %}
+                        <div class="info-item">
+                            <span class="info-label">Gusts</span>
+                            <span class="info-value">{{ weather.wind_gust }} knots</span>
+                        </div>
+                        {% endif %}
+
+                        {% if weather.wind_direction is not none %}
+                        <div class="info-item">
+                            <span class="info-label">Direction</span>
+                            <span class="info-value">
+                                {% if weather.wind_direction == 'VRB' or weather.wind_direction is none %}
+                                    Variable
+                                {% else %}
+                                    {{ weather.wind_direction }}°
+                                {% endif %}
+                            </span>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Cloud Information -->
+                {% if weather.clouds %}
+                <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #eee;">
+                    <h4 style="color: #1e3c72; font-size: 1.1rem; margin-bottom: 0.5rem;">☁️ Cloud Layers</h4>
+                    <div class="cloud-layers">
+                        {% for cloud in weather.clouds %}
+                        <div class="cloud-item" style="font-size: 0.8rem; padding: 0.3rem;">
+                            <strong>{{ cloud.cover }}</strong> at {{ cloud.base }} ft
+                        </div>
+                        {% endfor %}
+                    </div>
                 </div>
                 {% endif %}
-            </div>
 
-            <!-- Cloud Information -->
-            {% if weather.clouds %}
-            <div class="card info-card">
-                <h3>☁️ Cloud Layers</h3>
-                <div class="cloud-layers">
-                    {% for cloud in weather.clouds %}
-                    <div class="cloud-item">
-                        <strong>{{ cloud.cover }}</strong> at {{ cloud.base }} ft
+                <!-- Raw METAR -->
+                <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #eee;">
+                    <h4 style="color: #1e3c72; font-size: 1.1rem; margin-bottom: 0.5rem;">📡 Raw METAR</h4>
+                    <div class="raw-metar" style="font-size: 0.75rem; padding: 0.75rem;">{{ weather.raw_report }}</div>
+                    <div class="station-info" style="margin-top: 0.5rem; color: #666; font-size: 0.7rem;">
+                        <small>Observed: {{ weather.time }}</small>
                     </div>
-                    {% endfor %}
-                </div>
-            </div>
-            {% endif %}
-
-            <!-- METAR Report -->
-            <div class="card info-card">
-                <h3>📡 Raw METAR</h3>
-                <div class="raw-metar">{{ weather.raw_report }}</div>
-                <div class="station-info" style="margin-top: 1rem; color: #666;">
-                    <small>Observed: {{ weather.time }}</small>
                 </div>
             </div>
 
+            
             <!-- Temperature Chart -->
             <div class="card chart-card">
-                <h3 style="color: #667eea; margin-bottom: 0.5rem;">📊 7-Day Temperature Forecast</h3>
+                <h3 style="color: #1e3c72; margin-bottom: 0.5rem;">📊 7-Day Temperature Forecast</h3>
                 <p style="color: #999; font-size: 0.85rem; margin-bottom: 1rem;">
                     Data source: {{ forecast_source if forecast_source else 'Sample Data' }}
                 </p>
@@ -700,15 +755,15 @@
     <script>
         // Temperature data for conversion
         {% if weather %}
-        const tempC = {{ weather.temperature_c if weather.temperature_c is not none else 'null' }};
-        const tempF = {{ weather.temperature_f if weather.temperature_f is not none else 'null' }};
-        const dewpC = {{ weather.dewpoint_c if weather.dewpoint_c is not none else 'null' }};
-        const dewpF = {{ weather.dewpoint_f if weather.dewpoint_f is not none else 'null' }};
+        let tempC = {{ weather.temperature_c | default('null') }};
+        let tempF = {{ weather.temperature_f | default('null') }};
+        let dewpC = {{ weather.dewpoint_c | default('null') }};
+        let dewpF = {{ weather.dewpoint_f | default('null') }};
         {% else %}
-        const tempC = null;
-        const tempF = null;
-        const dewpC = null;
-        const dewpF = null;
+        let tempC = null;
+        let tempF = null;
+        let dewpC = null;
+        let dewpF = null;
         {% endif %}
         let isCelsius = true;
 
@@ -816,8 +871,8 @@
                         {
                             label: 'Average Temperature (°F)',
                             data: avgTemps,
-                            borderColor: 'rgb(102, 126, 234)',
-                            backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                            borderColor: 'rgb(30, 60, 114)',
+                            backgroundColor: 'rgba(30, 60, 114, 0.1)',
                             tension: 0.4,
                             fill: true
                         },

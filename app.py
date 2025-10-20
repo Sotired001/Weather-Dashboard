@@ -3,7 +3,6 @@ Advanced Weather Dashboard
 A Flask-based web application that displays real-time aviation weather data
 and 7-day temperature forecasts for airports worldwide.
 
-Author: Created with Claude Code
 APIs Used:
 - Aviation Weather API (METAR data)
 - Open-Meteo API (7-day forecasts)
@@ -86,19 +85,41 @@ def get_weather_data(station_code="KBWI"):
 
         report = data[0]
 
-        # Determine weather description from cloud cover
+        # Determine weather description from cloud cover and check for storms
         description = 'Clear'
         weather_icon = '☀️'
-        if 'cover' in report:
+        background_class = 'clear-sky'
+
+        # Check for thunderstorms or severe weather in raw METAR
+        raw_text = report.get('rawOb', '').upper()
+        if any(storm_indicator in raw_text for storm_indicator in ['TS', 'TSRA', 'TSSN', 'TSGR', 'VCTS', 'SQ', 'FC', '+FC']):
+            is_stormy = True
+            description = 'Thunderstorm'
+            weather_icon = '⛈️'
+            background_class = 'thunderstorm'
+        elif any(precip_indicator in raw_text for precip_indicator in ['RA', 'SN', 'PL', 'GR', 'GS', 'DZ']):
+            if 'RA' in raw_text:
+                description = 'Rain'
+                weather_icon = '🌧️'
+                background_class = 'rainy'
+            elif 'SN' in raw_text:
+                description = 'Snow'
+                weather_icon = '🌨️'
+                background_class = 'snowy'
+            else:
+                description = 'Precipitation'
+                weather_icon = '🌦️'
+                background_class = 'rainy'
+        elif 'cover' in report:
             cover_map = {
-                'SKC': ('Clear Sky', '☀️'),
-                'CLR': ('Clear', '☀️'),
-                'FEW': ('Few Clouds', '🌤️'),
-                'SCT': ('Scattered Clouds', '⛅'),
-                'BKN': ('Broken Clouds', '🌥️'),
-                'OVC': ('Overcast', '☁️')
+                'SKC': ('Clear Sky', '☀️', 'clear-sky'),
+                'CLR': ('Clear', '☀️', 'clear-sky'),
+                'FEW': ('Few Clouds', '🌤️', 'few-clouds'),
+                'SCT': ('Scattered Clouds', '⛅', 'scattered-clouds'),
+                'BKN': ('Broken Clouds', '🌥️', 'broken-clouds'),
+                'OVC': ('Overcast', '☁️', 'overcast')
             }
-            description, weather_icon = cover_map.get(report['cover'], (report['cover'], '🌤️'))
+            description, weather_icon, background_class = cover_map.get(report['cover'], (report['cover'], '🌤️', 'default-weather'))
 
         # Get flight category for visual indicator
         flight_cat = report.get('fltCat', 'UNKNOWN')
@@ -130,6 +151,7 @@ def get_weather_data(station_code="KBWI"):
             'pressure': report.get('altim'),
             'description': description,
             'icon': weather_icon,
+            'background_class': background_class,
             'flight_category': flight_cat,
             'clouds': report.get('clouds', []),
             'raw_report': report.get('rawOb'),
@@ -164,6 +186,7 @@ def home():
             'wind_speed': 10,
             'description': 'Partly cloudy',
             'icon': '⛅',
+            'background_class': 'scattered-clouds',
             'raw_report': 'Mock data - API unavailable',
             'error': True
         }
@@ -207,5 +230,42 @@ def api_weather(station_code):
     else:
         return jsonify({'error': 'Station not found or API unavailable'}), 404
 
+@app.route('/test-thunderstorm')
+def test_thunderstorm():
+    """Test endpoint to demonstrate thunderstorm background"""
+    # Create fake thunderstorm weather data
+    storm_data = {
+        'station': 'KSTORM',
+        'station_name': 'Thunderstorm Test Airport',
+        'time': '2025-10-20T18:00:00.000Z',
+        'temperature_c': 25.0,
+        'temperature_f': 77.0,
+        'description': 'Thunderstorm',
+        'icon': '⛈️',
+        'background_class': 'thunderstorm',
+        'raw_report': 'METAR KSTORM 201800Z 27015G25KT 1/4SM TSRA BKN010 25/22 A2992 RMK AO2 LTG DSNT W',
+        'humidity': 88,
+        'visibility': '0.25',
+        'wind_speed': 15,
+        'wind_gust': 25,
+        'wind_direction': 270,
+        'pressure': 29.92,
+        'flight_category': 'IFR',
+        'clouds': [{'cover': 'BKN', 'base': 1000}],
+        'dewpoint_c': 22.0,
+        'dewpoint_f': 71.6,
+        'lat': 25.0,
+        'lon': -80.0
+    }
+    return render_template('index.html',
+                         weather=storm_data,
+                         days=["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+                         avg_temps=[77.0, 78.0, 76.0, 79.0, 80.0, 81.0, 75.0],
+                         min_temps=[70.0, 71.0, 69.0, 72.0, 73.0, 74.0, 68.0],
+                         max_temps=[84.0, 85.0, 83.0, 86.0, 87.0, 88.0, 82.0],
+                         popular_airports=POPULAR_AIRPORTS,
+                         current_station='KSTORM',
+                         forecast_source='Test Data')
+
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    app.run(debug=False, host='0.0.0.0', port=5000)

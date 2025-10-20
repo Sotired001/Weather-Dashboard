@@ -8,12 +8,13 @@ A beautiful, feature-rich Flask web application that displays **real-time aviati
 
 ### 🌍 Real-Time Weather Data
 - **Live METAR data** from Aviation Weather API
-- Current temperature (with C°/F° toggle)
+- Current temperature (with °C/°F toggle)
 - Wind speed, gusts, and direction
 - Animated wind compass with smart VRB detection
 - Humidity, visibility, and barometric pressure
 - Cloud layers and flight category (VFR/MVFR/IFR/LIFR)
-- Dynamic weather icons based on conditions
+- **Dynamic weather icons** based on conditions
+- **Dynamic backgrounds** that change with weather (clear, cloudy, rainy, thunderstorm)
 
 ### 📊 7-Day Temperature Forecast
 - **Real forecast data** from Open-Meteo API
@@ -28,7 +29,8 @@ A beautiful, feature-rich Flask web application that displays **real-time aviati
 - Auto-uppercase input validation
 
 ### 🎨 Modern UI/UX
-- Stunning purple gradient background
+- Stunning gradient backgrounds that change with weather conditions
+- **Animated thunderstorm backgrounds** with lightning effects
 - Smooth animations (floating icons, pulsing effects)
 - Glassmorphism design elements
 - Hover effects and transitions
@@ -50,7 +52,7 @@ A beautiful, feature-rich Flask web application that displays **real-time aviati
 
 ### Installation
 
-1. **Clone or download the project**
+1. **Clone or download project**
    ```bash
    cd weather_app
    ```
@@ -60,7 +62,7 @@ A beautiful, feature-rich Flask web application that displays **real-time aviati
    pip install -r requirements.txt
    ```
 
-3. **Run the application**
+3. **Run application**
    ```bash
    python app.py
    ```
@@ -91,7 +93,7 @@ station_code = request.args.get('station', 'KBWI').upper()  # Change 'KBWI'
 Add to the `POPULAR_AIRPORTS` list in `app.py`:
 ```python
 POPULAR_AIRPORTS = [
-    {'code': 'YOURICAO', 'name': 'Your Airport Name'},
+    {'code': 'YOUR_ICAO', 'name': 'Your Airport Name'},
     # ... more airports
 ]
 ```
@@ -124,6 +126,16 @@ You can also use URL parameters:
 http://127.0.0.1:5000/?station=KLAX
 ```
 
+### Weather Backgrounds
+The dashboard automatically changes backgrounds based on weather conditions:
+- ☀️ **Clear Sky** - Light blue gradient
+- 🌤️ **Few Clouds** - Soft blue gradient
+- ⛅ **Scattered Clouds** - Steel blue gradient
+- 🌥️ **Broken Clouds** - Gray-blue gradient
+- ☁️ **Overcast** - Dark gray gradient
+- 🌧️ **Rain** - Dark stormy gradient
+- ⛈️ **Thunderstorm** - Dark purple with animated lightning
+
 ## 🛠️ Technologies Used
 
 - **Backend:** Flask (Python web framework)
@@ -140,6 +152,7 @@ http://127.0.0.1:5000/?station=KLAX
 | Temperature Toggle | ✅ | Switch °C/°F |
 | Wind Compass | ✅ | Animated direction indicator |
 | 7-Day Forecast | ✅ | Real forecast data |
+| Dynamic Backgrounds | ✅ | Weather-based gradients + animations |
 | Airport Search | ✅ | Any ICAO code |
 | Auto-Refresh | ✅ | 5-minute intervals |
 | Mobile Responsive | ✅ | Works on all devices |
@@ -150,12 +163,16 @@ http://127.0.0.1:5000/?station=KLAX
 ### Changing Colors
 Edit the CSS in `templates/index.html`:
 ```css
-background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+body {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
 ```
 
 ### Modifying Auto-Refresh Interval
-Change the interval in the JavaScript:
+Change the interval in JavaScript:
 ```javascript
+setInterval(() => {
+    location.reload();
 }, 5 * 60 * 1000); // Change from 5 minutes to your preference
 ```
 
@@ -163,8 +180,8 @@ Change the interval in the JavaScript:
 
 **Port already in use:**
 ```bash
-# Kill the process using port 5000
-# Windows: taskkill /F /IM python.exe
+# Kill process using port 5000
+# Windows: taskkill //F //IM python.exe
 # Linux/Mac: pkill -9 python
 ```
 
@@ -183,17 +200,13 @@ pip install -r requirements.txt
 
 This project is open source and available under the MIT License.
 
-## 👨‍💻 Author
-
-Sotired
-
 ## 🌟 Contributing
 
 Feel free to fork, modify, and share! Contributions are welcome.
 
 ## 📸 Screenshots
 
-![Weather Dashboard](image-1.png)
+![Weather Dashboard]![alt text](image.png)
 
 ---
 
