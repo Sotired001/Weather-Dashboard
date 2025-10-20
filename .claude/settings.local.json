@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "*",
+      "Bash(python:*)",
+      "Bash(curl:*)",
+      "Bash(for:*)",
+      "Bash(do echo:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

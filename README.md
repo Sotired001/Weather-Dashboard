@@ -206,7 +206,7 @@ Feel free to fork, modify, and share! Contributions are welcome.
 
 ## 📸 Screenshots
 
-![Weather Dashboard]![alt text](image.png)
+![Weather Dashboard]!![alt text](image.png)
 
 ---
 
