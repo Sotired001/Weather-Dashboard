@@ -11,9 +11,9 @@ This roadmap outlines the strategic vision for evolving the Weather Dashboard fr
 - [ ] **Responsive Polish:** Ensure perfect rendering on iPads and tablets (common Electronic Flight Bag devices).
 
 ### 🛠️ Engineering Excellence
-- [ ] **Dockerization:** Create a `Dockerfile` and `docker-compose.yml` for one-click deployment.
-- [ ] **Unit Testing Suite:** Establish a testing framework (`pytest`) for the core METAR parsing logic.
-- [ ] **CI/CD Pipeline:** Set up GitHub Actions to run tests on every push.
+- [x] **Dockerization:** Create a `Dockerfile` and `docker-compose.yml` for one-click deployment.
+- [x] **Unit Testing Suite:** Establish a testing framework (`pytest`) for the core METAR parsing logic.
+- [x] **CI/CD Pipeline:** Set up GitHub Actions to run tests on every push.
 
 ---
 
